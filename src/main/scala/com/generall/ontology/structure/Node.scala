@@ -3,26 +3,11 @@ package com.generall.ontology.structure
 /**
   * Created by generall on 17.07.16.
   */
-abstract class Node(_id: Int) {
-  def level() : Int
-  def category() : String
-  def superCats(): List[Node] = superNodes
-  def subCats(): List[Node] = subNodes
-  override def toString() = "Node( cat: " ++ category ++ "(" ++ level.toString ++ ") )"
+case class Node(_id: Int, _cat: String) {
 
-  var subNodes:List[Node] = List()
-  var superNodes:List[Node] = List()
-  var weight: Double = _
+  def category : String = _cat
+  override def toString() = "N(" ++ category ++ " (" ++ weight.toString ++ ") )"
+
+  var weight: Double = 0.0
   val id = _id
 }
-
-case class RootNode(_id: Int, cat: String) extends Node(_id){
-  override def level(): Int = 0
-  override def category(): String = cat
-}
-
-case class TrunkNode(_id: Int, cat: String, _level: Int) extends Node(_id){
-  override def level(): Int = _level
-  override def category(): String = cat
-}
-

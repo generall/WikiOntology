@@ -50,3 +50,14 @@ TS_4.0	CB_Unix_3
 System_V.0	TS_4.0
 System_V.2	System_V.0
 System_V.3	System_V.2
+Windows_NT	MS_DOS
+Windows_93	Windows_NT
+Windows_95	Windows_NT
+Windows_2000	Windows_93
+Windows_XP	Windows_NT
+Windows_XP	Windows_95
+Windows_XP	Windows_2000
+Windows_7	Windows_XP
+Windwos_10	Windows_8
+Windwos_8	Windows_7
+Windows_XP	Windows_10

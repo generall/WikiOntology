@@ -10,6 +10,8 @@ class TraversalSpec extends FlatSpec with Matchers {
 
   val traversal = factory.construct(List("9th_Edition"))
 
-  println(traversal.root.cat)
+  factory.extendTraversal(traversal, "Windows_XP")
+
+  println(traversal.toDot)
 
 }
