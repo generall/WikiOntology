@@ -13,7 +13,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "2.2.5" % "test",
   "org.w3" %% "banana-jena" % "0.8.1",
   "org.jgrapht" % "jgrapht-core" % "0.9.2",
-  "org.jgrapht" % "jgrapht-ext" % "0.9.2"
+  "org.jgrapht" % "jgrapht-ext" % "0.9.2",
+  "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
 )
 
 
