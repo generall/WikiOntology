@@ -14,6 +14,12 @@ class GraphClient extends TitanConnection {
     graph.V(x).out.toList
   }
 
+  def getSubNodes(x:Vertex):List[Vertex] = {
+    graph.V(x).in.toList
+  }
+
+
+
   def getByCategory(cat: String):Vertex = {
     graph.V.has(Category, cat).head
   }

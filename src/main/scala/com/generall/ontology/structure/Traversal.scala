@@ -16,7 +16,7 @@ import scala.collection.mutable
 class Traversal () {
   val graph: DirectedGraph[Node, DefaultEdge] = new SimpleDirectedGraph[Node, DefaultEdge](classOf[DefaultEdge])
 
-  val nodes = new mutable.HashMap[String, Node]().withDefaultValue(EmptyNode)
+  val nodes: mutable.Map[String, Node]  = new mutable.HashMap[String, Node]().withDefaultValue(EmptyNode)
 
   object NameProvider extends VertexNameProvider[Node]{
     override def getVertexName(vertex: Node): String = vertex.toString
@@ -38,35 +38,61 @@ class Traversal () {
     buf.toString
   }
 
-  def op(that: Traversal)(operation: (Double, Double) => Double ):Traversal =
-  {
+  def op(that: Traversal)
+        (keysMergeOp: (mutable.Map[String, Node], mutable.Map[String, Node]) => Set[String])
+        (operation: (Double, Double) => Double): Traversal = {
     val res = new Traversal
-    (this.nodes.keys ++ that.nodes.keys)
-      .toList
-      .distinct
-      .foreach(key =>{
+
+    // Set of keys available in operation result
+    val keysSet = keysMergeOp(this.nodes, that.nodes)
+
+    keysSet
+      .map(key => {
         val thisNode = this.nodes(key)
         val thatNode = that.nodes(key)
         val newWeight = operation(thisNode.weight, thatNode.weight)
-        val newId = if(thisNode.id > thatNode.id) thisNode.id else thatNode.id
-        val node = new Node( newId, key )
+        val newId = if (thisNode.id > thatNode.id) thisNode.id else thatNode.id
+        val node = new Node(newId, key)
         node.weight = newWeight
         res.graph.addVertex(node)
         res.nodes(key) = node
+        // get all edges from both graphs outgoing from currect
+        val thisEdges = thisNode match {
+          case EmptyNode => List()
+          case Node(_, _) => this.graph.outgoingEdgesOf(thisNode).asScala.map(edge => {
+            (key, this.graph.getEdgeTarget(edge).category)
+          })
+        }
+        val thatEdges = thatNode match {
+          case EmptyNode => List()
+          case Node(_, _) => that.graph.outgoingEdgesOf(thatNode).asScala.map(edge => {
+            (key, that.graph.getEdgeTarget(edge).category)
+          })
+        }
+        thisEdges ++ thatEdges
       })
-
-    this.graph.edgeSet().asScala.foreach(edge => {
-      val fromNode = res.nodes(this.graph.getEdgeSource(edge).category)
-      val toNode = res.nodes(this.graph.getEdgeTarget(edge).category)
-      res.graph.addEdge(fromNode, toNode)
-    })
-
-    that.graph.edgeSet().asScala.foreach(edge => {
-      val fromNode = res.nodes(this.graph.getEdgeSource(edge).category)
-      val toNode = res.nodes(this.graph.getEdgeTarget(edge).category)
-      res.graph.addEdge(fromNode, toNode)
-    })
-
+      .flatMap(x => x)
+      .filter(pair => keysSet.contains(pair._2))
+      .foreach(edge => {
+        val fromNode = res.nodes(edge._1)
+        val toNode = res.nodes(edge._2)
+        res.graph.addEdge(fromNode, toNode)
+      })
     res
+  }
+
+  def sub(that: Traversal): Traversal= {
+    this.op(that)( (this_nodes, that_nodes) => this_nodes.keySet.toSet ) ((x,y) => x - y)
+  }
+
+  def intersect(that: Traversal): Traversal = {
+    this.op(that)( (this_nodes, that_nodes) => this_nodes.keySet.intersect(that_nodes.keySet).toSet)( (x, y) => List(x, y).min )
+  }
+
+  def getLeafs(): List[Node] = {
+    val leafs = graph.vertexSet().asScala.filter(node => {
+      graph.inDegreeOf(node) == 0
+    }).toList
+    leafs
   }
 }
