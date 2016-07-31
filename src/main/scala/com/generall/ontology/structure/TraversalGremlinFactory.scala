@@ -56,9 +56,8 @@ object TraversalGremlinFactory {
                        delayedMap: mutable.HashMap[Vertex, (Node, Double)],
                        threshold: Double
                      ): Traversal = {
-    val node = getNode(traversal, vertex)
     val initialWeight = 1.0
-    growUp(traversal, node, vertex, initialWeight, delayedMap, threshold)
+    growUp(traversal, vertex, initialWeight, delayedMap, threshold)
     traversal
   }
 
@@ -78,22 +77,19 @@ object TraversalGremlinFactory {
                      delayedMap: mutable.HashMap[Vertex, (Node, Double)],
                      threshold: Double
                    ): Traversal = {
-    val node = getNode(traversal, vertex)
     val initialWeight = 1.0
-    growDown(traversal, node, vertex, initialWeight, delayedMap, threshold)
+    growDown(traversal, vertex, initialWeight, delayedMap, threshold)
     traversal
   }
 
 
   def growUp(traversal: Traversal,
-             initNode: Node,
              initVertex: Vertex,
              initWeight: Double,
              delayedMap: mutable.HashMap[Vertex, (Node, Double)],
              threshold: Double)
   = grow(
     traversal,
-    initNode,
     initVertex,
     initWeight,
     delayedMap,
@@ -103,14 +99,12 @@ object TraversalGremlinFactory {
   )( (lst, oldWeight, weight) => oldWeight + weight / lst.size)
 
   def growDown(traversal: Traversal,
-               initNode: Node,
                initVertex: Vertex,
                initWeight: Double,
                delayedMap: mutable.HashMap[Vertex, (Node, Double)],
                threshold: Double)
   = grow(
     traversal,
-    initNode,
     initVertex,
     initWeight,
     delayedMap,
@@ -123,7 +117,6 @@ object TraversalGremlinFactory {
   /**
     * Expansion of current traversal with adding new nodes and updating weight
     * @param traversal traversal to extend
-    * @param initNode initial node of extension
     * @param initVertex initial vertex of graph
     * @param initWeight weight of initial node
     * @param delayedMap map of nodes with have weight less then threshold
@@ -133,7 +126,6 @@ object TraversalGremlinFactory {
     */
   def grow(
             traversal: Traversal,
-            initNode: Node,
             initVertex: Vertex,
             initWeight: Double,
             delayedMap: mutable.HashMap[Vertex, (Node, Double)],
@@ -146,6 +138,8 @@ object TraversalGremlinFactory {
     val pendingMap = new mutable.HashMap[Vertex, (Node, Double)]
 
     val seenVertices = new mutable.HashSet[Vertex]()
+
+    val initNode = getNode(traversal, initVertex)
 
     var next = Option((initVertex, (initNode, initWeight)))
 
@@ -210,12 +204,11 @@ object TraversalGremlinFactory {
     val cat = vertex.value[String](Config.PROP_CATEGORY)
     var node = traversal.nodes(cat)
     node match {
-      case EmptyNode => {
+      case EmptyNode =>
         node = new Node(vertex.hashCode(), cat)
         traversal.nodes(cat) = node
         traversal.graph.addVertex(node)
         node
-      }
       case Node(_, _) => node
     }
   }

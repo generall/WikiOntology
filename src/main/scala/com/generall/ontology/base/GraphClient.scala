@@ -18,6 +18,13 @@ class GraphClient extends TitanConnection {
     graph.V(x).in.toList
   }
 
+  def getSuperNodes(x:String):List[String] = {
+    graph.V.has(Category, x).out.values[String]("category").toList()
+  }
+
+  def getSubNodes(x:String):List[String] = {
+    graph.V.has(Category, x).in.values[String]("category").toList()
+  }
 
 
   def getByCategory(cat: String):Vertex = {
