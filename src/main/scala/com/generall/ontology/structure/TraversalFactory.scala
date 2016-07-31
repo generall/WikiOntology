@@ -1,33 +1,32 @@
 package com.generall.ontology.structure
 
-import com.generall.ontology.base.{Config, GraphClient}
-import gremlin.scala._
+import com.generall.ontology.base.{GraphClientInterface, VertexAdapter}
 
 import scala.collection.mutable
 
 /**
   * Created by generall on 17.07.16.
   */
-object TraversalGremlinFactory {
-  val graphClient = new GraphClient
+class TraversalFactory(graphClient: GraphClientInterface) {
   val threshold = 0.1 // Minimum delta weight per traversal
 
   /**
     * Constructs ontology graph for list of categories.
+ *
     * @param initialCats list of initial categories, typically taken from concept
     * @param threshold minimum weight barrier
     * @return category graph
     */
   def constructConcept(initialCats: List[String], threshold: Double = threshold): Traversal = {
     val traversal = new Traversal
-    val delayedMap = new mutable.HashMap[Vertex, (Node, Double)]
+    val delayedMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
     initialCats.foreach(x => extendTraversal(traversal, x, delayedMap, threshold))
     traversal
   }
 
   def constructContext(initialCats: List[String], threshold: Double = threshold): Traversal = {
     val traversal = new Traversal
-    val delayedMap = new mutable.HashMap[Vertex, (Node, Double)]
+    val delayedMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
     initialCats.foreach(x => extendContext(traversal, x, delayedMap, threshold))
     traversal
   }
@@ -43,50 +42,35 @@ object TraversalGremlinFactory {
   def extendTraversal(
                        traversal: Traversal,
                        cat: String,
-                       delayedMap: mutable.HashMap[Vertex, (Node, Double)] = null,
+                       delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)] = null,
                        threshold: Double = threshold
                      ): Traversal = {
-    val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[Vertex, (Node, Double)] else delayedMap
-    extendTraversal(traversal, graphClient.getByCategory(cat), thisDelayedMap, threshold)
-  }
-
-  def extendTraversal(
-                       traversal: Traversal,
-                       vertex: Vertex,
-                       delayedMap: mutable.HashMap[Vertex, (Node, Double)],
-                       threshold: Double
-                     ): Traversal = {
+    val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
     val initialWeight = 1.0
-    growUp(traversal, vertex, initialWeight, delayedMap, threshold)
+    val vertex = graphClient.getByCategory(cat)
+    if (vertex != null) growUp(traversal, vertex, initialWeight, thisDelayedMap, threshold)
     traversal
   }
 
   def extendContext(
                      traversal: Traversal,
                      cat: String,
-                     delayedMap: mutable.HashMap[Vertex, (Node, Double)] = null,
+                     delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)] = null,
                      threshold: Double = threshold
                    ): Traversal = {
-    val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[Vertex, (Node, Double)] else delayedMap
-    extendContext(traversal, graphClient.getByCategory(cat), thisDelayedMap, threshold)
-  }
-
-  def extendContext(
-                     traversal: Traversal,
-                     vertex: Vertex,
-                     delayedMap: mutable.HashMap[Vertex, (Node, Double)],
-                     threshold: Double
-                   ): Traversal = {
+    val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
     val initialWeight = 1.0
-    growDown(traversal, vertex, initialWeight, delayedMap, threshold)
+    val vertex = graphClient.getByCategory(cat)
+    if (vertex != null) growDown(traversal, vertex, initialWeight, thisDelayedMap, threshold)
     traversal
   }
 
 
+
   def growUp(traversal: Traversal,
-             initVertex: Vertex,
+             initVertex: VertexAdapter,
              initWeight: Double,
-             delayedMap: mutable.HashMap[Vertex, (Node, Double)],
+             delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)],
              threshold: Double)
   = grow(
     traversal,
@@ -99,9 +83,9 @@ object TraversalGremlinFactory {
   )( (lst, oldWeight, weight) => oldWeight + weight / lst.size)
 
   def growDown(traversal: Traversal,
-               initVertex: Vertex,
+               initVertex: VertexAdapter,
                initWeight: Double,
-               delayedMap: mutable.HashMap[Vertex, (Node, Double)],
+               delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)],
                threshold: Double)
   = grow(
     traversal,
@@ -116,6 +100,7 @@ object TraversalGremlinFactory {
 
   /**
     * Expansion of current traversal with adding new nodes and updating weight
+ *
     * @param traversal traversal to extend
     * @param initVertex initial vertex of graph
     * @param initWeight weight of initial node
@@ -126,18 +111,18 @@ object TraversalGremlinFactory {
     */
   def grow(
             traversal: Traversal,
-            initVertex: Vertex,
+            initVertex: VertexAdapter,
             initWeight: Double,
-            delayedMap: mutable.HashMap[Vertex, (Node, Double)],
+            delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)],
             threshold: Double
           )
-          (retrieve: (Vertex => List[(Vertex, Vertex)]))
-          (weighting: ((List[(Node, Vertex)], Double, Double) => Double))
+          (retrieve: (VertexAdapter => List[(VertexAdapter, VertexAdapter)]))
+          (weighting: ((List[(Node, VertexAdapter)], Double, Double) => Double))
   : Unit = {
 
-    val pendingMap = new mutable.HashMap[Vertex, (Node, Double)]
+    val pendingMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
 
-    val seenVertices = new mutable.HashSet[Vertex]()
+    val seenVertices = new mutable.HashSet[VertexAdapter]()
 
     val initNode = getNode(traversal, initVertex)
 
@@ -200,12 +185,12 @@ object TraversalGremlinFactory {
     traversal
   }
 
-  def getNode(traversal: Traversal, vertex: Vertex): Node = {
-    val cat = vertex.value[String](Config.PROP_CATEGORY)
+  def getNode(traversal: Traversal, vertex: VertexAdapter): Node = {
+    val cat = vertex.category
     var node = traversal.nodes(cat)
     node match {
       case EmptyNode =>
-        node = new Node(vertex.hashCode(), cat)
+        node = new Node(cat.hashCode(), cat)
         traversal.nodes(cat) = node
         traversal.graph.addVertex(node)
         node

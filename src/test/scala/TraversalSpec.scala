@@ -1,5 +1,5 @@
-import com.generall.ontology.base.GraphClient
-import com.generall.ontology.structure.{Traversal, Node, Concept, TraversalGremlinFactory}
+import com.generall.ontology.base.{ContextGraphClient, SimpleVertex, GraphClient}
+import com.generall.ontology.structure.{Traversal, Node, Concept, TraversalFactory}
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -15,7 +15,7 @@ class TraversalSpec extends FlatSpec with Matchers {
     result
   }
 
-  val factory = TraversalGremlinFactory
+  val factory = new TraversalFactory(GraphClient)
   //println(diff.toDot)
 
   def operationTest() = {
@@ -80,9 +80,26 @@ class TraversalSpec extends FlatSpec with Matchers {
     //println(common_context.toDot)
   }
 
+  "contextClientSpec" should "Create graph client from previous graph traversal" in {
+    val wiki_projects_context = time { factory.constructContext(List("http://dbpedia.org/resource/Category:Technology_WikiProjects")) }
+
+    val contextClient = new ContextGraphClient(wiki_projects_context)
+
+    val contextFactory = new TraversalFactory(contextClient)
+
+    val scala = new Concept("http://dbpedia.org/resource/Scala_(programming_language)")
+
+    val traversalScala = contextFactory.constructConcept(scala.categories)
+
+    contextFactory.removeUnderweightNodes(traversalScala)
+
+    println(traversalScala.toDot)
+
+  }
+
   "graphClientSpec" should "retrieve vertices by categories and return categories" in {
-    val client = new GraphClient
-    val subCats = client.getSubNodes("http://dbpedia.org/resource/Category:Technology_WikiProjects")
+    val client = GraphClient
+    val subCats = client.getSubNodes(SimpleVertex("http://dbpedia.org/resource/Category:Technology_WikiProjects"))
 
     assert(subCats.nonEmpty)
   }

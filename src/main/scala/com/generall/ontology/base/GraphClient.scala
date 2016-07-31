@@ -5,7 +5,7 @@ import gremlin.scala._
 /**
   * Created by generall on 17.07.16.
   */
-class GraphClient extends TitanConnection {
+object GraphClient extends TitanConnection with GraphClientInterface{
 
   val graph = connect().asScala
   val Category = Key[String]("category")
@@ -18,17 +18,24 @@ class GraphClient extends TitanConnection {
     graph.V(x).in.toList
   }
 
-  def getSuperNodes(x:String):List[String] = {
-    graph.V.has(Category, x).out.values[String]("category").toList()
+  override def getSuperNodes(x:VertexAdapter):List[GremlinVertex] = {
+    (x match {
+      case GremlinVertex(vertex) => getSuperNodes(vertex)
+      case adapter => graph.V.has(Category, adapter.category).out.toList()
+    }).map(v => new GremlinVertex(v))
   }
 
-  def getSubNodes(x:String):List[String] = {
-    graph.V.has(Category, x).in.values[String]("category").toList()
+  override def getSubNodes(x:VertexAdapter):List[GremlinVertex] = {
+    (x match {
+      case GremlinVertex(vertex) => getSubNodes(vertex)
+      case adapter => graph.V.has(Category, adapter.category).in.toList()
+    }).map(v => new GremlinVertex(v))
   }
 
 
-  def getByCategory(cat: String):Vertex = {
-    graph.V.has(Category, cat).head
+  override def getByCategory(cat: String):GremlinVertex = {
+    val vertex = graph.V.has(Category, cat).head
+    new GremlinVertex(vertex)
   }
 
 }
