@@ -95,4 +95,10 @@ class Traversal () {
     }).toList
     leafs
   }
+
+  def getTop(threshold: Double): List[Node] = {
+    nodes.values.filter( node => {
+      node.weight >= threshold
+    }).toList
+  }
 }
