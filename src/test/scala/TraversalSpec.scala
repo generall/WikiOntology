@@ -1,5 +1,5 @@
-import com.generall.ontology.base.{ContextGraphClient, SimpleVertex, GraphClient}
-import com.generall.ontology.structure.{Traversal, Node, Concept, TraversalFactory}
+import ml.generall.ontology.base.{ContextGraphClient, SimpleVertex, GraphClient}
+import ml.generall.ontology.structure.{Traversal, Node, Concept, TraversalFactory}
 import org.scalatest.{FlatSpec, Matchers}
 
 /**

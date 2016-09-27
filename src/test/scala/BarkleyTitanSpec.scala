@@ -1,4 +1,4 @@
-import com.generall.ontology.base.TitanConnection
+import ml.generall.ontology.base.TitanConnection
 import gremlin.scala._
 import org.scalatest._
 

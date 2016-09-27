@@ -3,7 +3,7 @@ name := "ontology"
 scalaVersion := "2.11.8"
 version := "1.0-SNAPSHOT"
 
-organization := "com.generall"
+organization := "ml.generall"
 val titanV = "1.0.0"
 
 libraryDependencies ++= Seq(
