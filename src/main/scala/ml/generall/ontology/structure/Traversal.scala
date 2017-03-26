@@ -3,11 +3,10 @@ package ml.generall.ontology.structure
 import java.io.StringWriter
 
 import org.jgrapht.DirectedGraph
-import org.jgrapht.ext.{DOTExporter, IntegerNameProvider, VertexNameProvider}
+import org.jgrapht.ext._
 import org.jgrapht.graph.{DefaultEdge, SimpleDirectedGraph}
+
 import scala.collection.JavaConverters._
-
-
 import scala.collection.mutable
 
 /**
@@ -18,8 +17,8 @@ class Traversal () {
 
   val nodes: mutable.Map[String, Node]  = new mutable.HashMap[String, Node]().withDefaultValue(EmptyNode)
 
-  object NameProvider extends VertexNameProvider[Node]{
-    override def getVertexName(vertex: Node): String = vertex.toString
+  object NameProvider extends ComponentNameProvider[Node]{
+    override def getName(component: Node): String =  component.toString
   }
 
   def removeNode(node: Node) = {
@@ -29,12 +28,12 @@ class Traversal () {
 
   def toDot: String = {
     val e = new DOTExporter[Node, DefaultEdge](
-      new IntegerNameProvider[Node],
+      new IntegerComponentNameProvider[Node],
       NameProvider,
       null
     )
     val buf =new StringWriter()
-    e.export(buf, graph)
+    e.exportGraph(graph, buf)
     buf.toString
   }
 

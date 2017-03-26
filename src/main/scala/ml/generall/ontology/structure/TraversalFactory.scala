@@ -1,6 +1,7 @@
 package ml.generall.ontology.structure
 
 import ml.generall.ontology.base.{GraphClientInterface, VertexAdapter}
+import ml.generall.ontology.tools.Tools
 
 import scala.collection.mutable
 
@@ -12,15 +13,14 @@ class TraversalFactory(graphClient: GraphClientInterface) {
 
   /**
     * Constructs ontology graph for list of categories.
- *
+    *
     * @param initialCats list of initial categories, typically taken from concept
-    * @param threshold minimum weight barrier
+    * @param threshold   minimum weight barrier
     * @return category graph
     */
   def constructConcept(initialCats: List[String], threshold: Double = threshold): Traversal = {
     val traversal = new Traversal
-    val delayedMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
-    initialCats.foreach(x => extendTraversal(traversal, x, delayedMap, threshold))
+    initialCats.foreach(category => fastExtendTraversal(traversal, category))
     traversal
   }
 
@@ -28,6 +28,31 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     val traversal = new Traversal
     val delayedMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
     initialCats.foreach(x => extendContext(traversal, x, delayedMap, threshold))
+    traversal
+  }
+
+  def fastExtendTraversal(traversal: Traversal,
+                          cat: String): Traversal = {
+
+    val initialWeight = 1.0 // TODO: change to TF
+
+    val vtx = graphClient
+      .getByCategory(cat)
+
+    vtx match {
+      case Some(fromVertex) =>
+        val fromNode = getNode(traversal, fromVertex)
+        fromNode.weight += initialWeight
+        val parents = graphClient.getSuperNodes(fromVertex)
+        val count = parents.size
+
+        parents.foreach( vertex => {
+          val toNode = getNode(traversal, vertex)
+          toNode.weight += initialWeight / count
+          traversal.graph.addEdge(fromNode, toNode)
+        })
+      case None =>
+    }
     traversal
   }
 
@@ -63,12 +88,11 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
     val initialWeight = 1.0
     graphClient.getByCategory(cat) match {
-      case Some(vertex) => growDown (traversal, vertex, initialWeight, thisDelayedMap, threshold)
+      case Some(vertex) => growDown(traversal, vertex, initialWeight, thisDelayedMap, threshold)
       case None =>
     }
     traversal
   }
-
 
 
   def growUp(traversal: Traversal,
@@ -84,7 +108,7 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     threshold
   )(
     x => graphClient.getSuperNodes(x).map((x, _))
-  )( (lst, oldWeight, weight) => oldWeight + weight / lst.size)
+  )((lst, oldWeight, weight) => oldWeight + weight / lst.size)
 
   def growDown(traversal: Traversal,
                initVertex: VertexAdapter,
@@ -99,19 +123,19 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     threshold
   )(
     x => graphClient.getSubNodes(x).map((x, _))
-  )( (lst, oldWeight, weight) => 1.0 /*oldWeight + weight / lst.size*/)
+  )((lst, oldWeight, weight) => 1.0 /*oldWeight + weight / lst.size*/)
 
 
   /**
     * Expansion of current traversal with adding new nodes and updating weight
- *
-    * @param traversal traversal to extend
+    *
+    * @param traversal  traversal to extend
     * @param initVertex initial vertex of graph
     * @param initWeight weight of initial node
     * @param delayedMap map of nodes with have weight less then threshold
-    * @param threshold minimum weight of node
-    * @param retrieve strategy on expansion
-    * @param weighting strategy of weighting
+    * @param threshold  minimum weight of node
+    * @param retrieve   strategy on expansion
+    * @param weighting  strategy of weighting
     */
   def grow(
             traversal: Traversal,
@@ -138,45 +162,48 @@ class TraversalFactory(graphClient: GraphClientInterface) {
 
       seenVertices.add(vertex)
       // Collect all neighbours-nodes of current node
-      val neighbourNodes = retrieve(vertex)
-        .filter(pair => !seenVertices.contains(pair._1) || !seenVertices.contains(pair._2)) // ignore loops
-        .map(
-        edge => {
-          val (from, to) = edge
-          if (from == vertex) {
-            val res = (getNode(traversal, to), to)
-            traversal.graph.addEdge(node, res._1)
-            res
-          } else {
-            val res = (getNode(traversal, from), from)
-            traversal.graph.addEdge(res._1, node)
-            res
+      val neighbourNodes = Tools.time({
+        retrieve(vertex)
+          .filter(pair => !seenVertices.contains(pair._1) || !seenVertices.contains(pair._2)) // ignore loops
+          .map {
+          case (from, to) => {
+            if (from == vertex) {
+              val res = (getNode(traversal, to), to)
+              traversal.graph.addEdge(node, res._1)
+              res
+            } else {
+              val res = (getNode(traversal, from), from)
+              traversal.graph.addEdge(res._1, node)
+              res
+            }
           }
         }
-      )
+      }, "retrieve: " + vertex.category)
 
-      // Update weights and add pending nodes to the queue
-      neighbourNodes.foreach(pair => {
-        var isDelayed = false
-        val (node, vertex) = pair
-        val record = delayedMap.get(vertex) match {
-          case Some((n: Node, w: Double)) =>
-            isDelayed = true
-            (node, weighting(neighbourNodes, w, weight))
-          case None => pendingMap.get(vertex) match {
-            case None => (node,  weighting(neighbourNodes, 0.0, weight))
-            case Some((n: Node, w: Double)) => (n,  weighting(neighbourNodes, w, weight))
+      Tools.time({
+        // Update weights and add pending nodes to the queue
+        neighbourNodes.foreach(pair => {
+          var isDelayed = false
+          val (node, vertex) = pair
+          val record = delayedMap.get(vertex) match {
+            case Some((n: Node, w: Double)) =>
+              isDelayed = true
+              (node, weighting(neighbourNodes, w, weight))
+            case None => pendingMap.get(vertex) match {
+              case None => (node, weighting(neighbourNodes, 0.0, weight))
+              case Some((n: Node, w: Double)) => (n, weighting(neighbourNodes, w, weight))
+            }
           }
-        }
-        val isBigEnough = record._2 > threshold // check weight of node
-        if (isBigEnough) { // move from delayed to pending if required
-          pendingMap(vertex) = record
-          if (isDelayed) delayedMap.remove(vertex)
-        } else { // do not move to pending
-          delayedMap(vertex) = record
-        }
+          val isBigEnough = record._2 > threshold // check weight of node
+          if (isBigEnough) { // move from delayed to pending if required
+            pendingMap(vertex) = record
+            if (isDelayed) delayedMap.remove(vertex)
+          } else { // do not move to pending
+            delayedMap(vertex) = record
+          }
 
-      })
+        })
+      }, "Update weights: " + vertex.category)
       next = pendingMap.headOption
       if (pendingMap.nonEmpty)
         pendingMap.remove(next.get._1)
@@ -194,7 +221,7 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     var node = traversal.nodes(cat)
     node match {
       case EmptyNode =>
-        node = new Node(cat.hashCode(), cat)
+        node = Node(cat.hashCode(), cat)
         traversal.nodes(cat) = node
         traversal.graph.addVertex(node)
         node

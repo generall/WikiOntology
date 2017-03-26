@@ -5,5 +5,7 @@ object Config {
   val PROP_CATEGORY="category"
   val PROB_LEVEL="level"
   val CONCEPT_MAPPING_BASE = "jdbc:sqlite:/home/generall/data/dbpedia/ontology/art_to_cat.db"
+  val GRAPH_TSV = "/home/generall/data/dbpedia/ontology/clustered_graph_no_loops.tsv"
+  val GRAPH_CACHE = "/tmp/graph_cache.bin"
 
 }

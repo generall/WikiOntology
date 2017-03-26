@@ -20,7 +20,7 @@ object SqliteClient {
 SELECT categories.url FROM articles
 JOIN relations ON (articles.id = relations.id_art)
 JOIN categories ON (relations.id_cat = categories.id)
-WHERE articles.url = "${concept}" LIMIT 20
+WHERE articles.url = "${concept}" LIMIT 30
 """
 
     val queryResult = stmt.executeQuery(sql)

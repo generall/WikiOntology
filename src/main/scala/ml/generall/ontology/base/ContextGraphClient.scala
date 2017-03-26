@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 /**
   * Created by generall on 31.07.16.
   */
-class ContextGraphClient(traversal: Traversal) extends GraphClientInterface{
+class ContextGraphClient(traversal: Traversal) extends GraphClientInterface {
 
   override def getByCategory(cat: String): Option[VertexAdapter] = if (traversal.nodes.contains(cat)) Some(NodeVertex(traversal.nodes(cat))) else None
 

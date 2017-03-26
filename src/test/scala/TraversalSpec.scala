@@ -1,4 +1,4 @@
-import ml.generall.ontology.base.{ContextGraphClient, GraphClient, SimpleVertex}
+import ml.generall.ontology.base.{ContextGraphClient, GraphClient, InMemoryGraphClient, SimpleVertex}
 import ml.generall.ontology.structure.{Concept, Node, Traversal, TraversalFactory}
 import ml.generall.ontology.tools.Tools
 import org.scalatest.{FlatSpec, Matchers}
@@ -18,7 +18,7 @@ class TraversalSpec extends FlatSpec with Matchers {
     result
   }
 
-  val factory = new TraversalFactory(GraphClient)
+  val factory = new TraversalFactory(InMemoryGraphClient)
   //println(diff.toDot)
 
   def operationTest() = {
@@ -222,11 +222,45 @@ class TraversalSpec extends FlatSpec with Matchers {
       "http://dbpedia.org/resource/James_Cameron"
     )
 
-    vars.map(art => {
-      Tools.time(Concept(art).categories, "SQL " + art)
-    }).map(cats =>{
-      Tools.time(factory.constructConcept(cats, threshold), "gremlin")
-    })
+    Tools.time({
+      vars.map(art => {
+        Tools.time(Concept(art).categories, "SQL " + art)
+      }).map(cats => {
+        Tools.time(factory.constructConcept(cats, threshold), "gremlin")
+      })
+    }, "Total time")
   }
+
+  "graphClient" should "be quick" in {
+
+    val cats = List("C_Best_Sound_Mixing_Academy_Award_winners",
+      "C_Best_Picture_Academy_Award_winners",
+      "C_Academy_Award_winners",
+      "C_Pacific_Ocean",
+      "C_Best_Film_Editing_Academy_Award_winners",
+      "C_American_disaster_films",
+      "C_Film_scores",
+      "C_Best_Original_Song_Academy_Award_winning_songs",
+      "C_2012_films",
+      "C_Paramount_Pictures_films",
+      "C_Romance_films",
+      "C_American_films",
+      "C_Vancouver",
+      "C_Love",
+      "C_3D_films_by_country",
+      "C_Nova_Scotia",
+      "C_IMAX_venues",
+      "C_Best_Sound_Editing_Academy_Award_winners",
+      "C_American_drama_films",
+      "C_Films_whose_director_won_the_Best_Director_Golden_Globe")
+
+    cats
+      .map(cat => Tools.time(InMemoryGraphClient.getByCategory(cat), "getByCategory: " + cat))
+      .map(vertex => vertex.map(x => Tools.time(InMemoryGraphClient.getSuperNodes(x), "getSuperNodes: " + x )) )
+  }
+
+
+
+
 
 }
