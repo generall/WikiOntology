@@ -1,8 +1,9 @@
 
 
 PATH_TO_CONFIG='conf/titan-berkeleyje.properties'
+PATH_TO_GRAPH='/home/generall/data/dbpedia/ontology/clustered_graph.tsv'
 //PATH_TO_GRAPH='/home/generall/data/dbpedia/ontology/ontology.tsv'
-PATH_TO_GRAPH='/home/generall/Dropbox/Sci/ml/ontology/src/test/resources/fake_ontology.tsv'
+//PATH_TO_GRAPH='/home/generall/Dropbox/Sci/ml/ontology/src/test/resources/fake_ontology.tsv'
 
 //graph = TinkerGraph.open()
 graph = TitanFactory.open(PATH_TO_CONFIG)

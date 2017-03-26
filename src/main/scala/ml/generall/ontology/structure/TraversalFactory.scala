@@ -47,8 +47,10 @@ class TraversalFactory(graphClient: GraphClientInterface) {
                      ): Traversal = {
     val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
     val initialWeight = 1.0
-    val vertex = graphClient.getByCategory(cat)
-    if (vertex != null) growUp(traversal, vertex, initialWeight, thisDelayedMap, threshold)
+    graphClient.getByCategory(cat) match {
+      case Some(vertex) => growUp(traversal, vertex, initialWeight, thisDelayedMap, threshold)
+      case None =>
+    }
     traversal
   }
 
@@ -60,8 +62,10 @@ class TraversalFactory(graphClient: GraphClientInterface) {
                    ): Traversal = {
     val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
     val initialWeight = 1.0
-    val vertex = graphClient.getByCategory(cat)
-    if (vertex != null) growDown(traversal, vertex, initialWeight, thisDelayedMap, threshold)
+    graphClient.getByCategory(cat) match {
+      case Some(vertex) => growDown (traversal, vertex, initialWeight, thisDelayedMap, threshold)
+      case None =>
+    }
     traversal
   }
 

@@ -1,6 +1,9 @@
-import ml.generall.ontology.base.{ContextGraphClient, SimpleVertex, GraphClient}
-import ml.generall.ontology.structure.{Traversal, Node, Concept, TraversalFactory}
+import ml.generall.ontology.base.{ContextGraphClient, GraphClient, SimpleVertex}
+import ml.generall.ontology.structure.{Concept, Node, Traversal, TraversalFactory}
+import ml.generall.ontology.tools.Tools
 import org.scalatest.{FlatSpec, Matchers}
+
+import scala.reflect.io.File
 
 /**
   * Created by generall on 17.07.16.
@@ -9,7 +12,7 @@ class TraversalSpec extends FlatSpec with Matchers {
 
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
-    val result = block    // call-by-name
+    val result = block // call-by-name
     val t1 = System.nanoTime()
     println("Elapsed time: " + (t1 - t0) / 1000000 + "ms")
     result
@@ -32,27 +35,27 @@ class TraversalSpec extends FlatSpec with Matchers {
     factory.removeUnderweightNodes(traversal2)
 
     val diff = traversal1.op(traversal2)(
-      (thisNodes, thatNodes) => (thisNodes.keySet ++ thatNodes.keySet).toSet) ((x, y) => {
+      (thisNodes, thatNodes) => (thisNodes.keySet ++ thatNodes.keySet).toSet)((x, y) => {
       //if (x > factory.threshold && y > factory.threshold) 0.0 else 1.0
       List(x, y).min
     })
 
     factory.removeUnderweightNodes(diff)
 
-    diff.nodes.values.toList.sortBy( - _.weight).foreach(println)
+    diff.nodes.values.toList.sortBy(-_.weight).foreach(println)
 
   }
 
-  "conceptSpec" should "load concept`s categories"  in {
+  "conceptSpec" should "load concept`s categories" in {
     val scala = new Concept("http://dbpedia.org/resource/Scala_(programming_language)")
 
     val kotlin = new Concept("http://dbpedia.org/resource/Kotlin_(programming_language)")
 
     val groovy = new Concept("http://dbpedia.org/resource/Groovy_(programming_language)")
 
-    val traversalScala = factory.constructConcept(scala.categories)
-    val traversalKotlin = factory.constructConcept(kotlin.categories)
-    val traversalGroovy = factory.constructConcept(groovy.categories)
+    val traversalScala = factory.constructConcept(scala.categories, 0.4)
+    val traversalKotlin = factory.constructConcept(kotlin.categories, 0.4)
+    val traversalGroovy = factory.constructConcept(groovy.categories, 0.4)
 
     val diff = traversalScala sub traversalKotlin
 
@@ -60,28 +63,69 @@ class TraversalSpec extends FlatSpec with Matchers {
 
     diff.getLeafs().foreach(x => println(x.category))
 
+    File("scala.dot").writeAll(traversalScala.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+    File("kotlin.dot").writeAll(traversalScala.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+    File("diff.dot").writeAll(diff.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+
     println(diff.toDot)
+  }
+
+  "confSpec" should "generate dot files for conference" in {
+    val c1 = List("http://dbpedia.org/resource/Category:Mathematics", "http://dbpedia.org/resource/Category:Education")
+    val c2 = List("http://dbpedia.org/resource/Category:Computer_science", "http://dbpedia.org/resource/Category:Geometry")
+    val c3 = List("http://dbpedia.org/resource/Category:Agriculture", "http://dbpedia.org/resource/Category:Cattle_breeds")
+
+    val traversalC1 = factory.constructConcept(c1, 0.1)
+    val traversalC2 = factory.constructConcept(c2, 0.1)
+    val traversalC3 = factory.constructConcept(c3, 0.1)
+
+    val int1 = traversalC1 intersect traversalC2
+    val int2 = traversalC1 intersect traversalC3
+    val int3 = traversalC2 intersect traversalC3
+
+    factory.removeUnderweightNodes(int1)
+    factory.removeUnderweightNodes(int2)
+    factory.removeUnderweightNodes(int3)
+
+
+    println("Mathematics and Computer_science: ", int1.getLeafs().map(x => x.weight).sum)
+    println("Mathematics and Cattle_breeds: ", int2.getLeafs().map(x => x.weight).sum)
+    println("Computer_science and Cattle_breeds: ", int3.getLeafs().map(x => x.weight).sum)
+
+    println(int1.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+    println(int2.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+    println(int3.toDot.replaceAll("http://dbpedia.org/resource/Category:", ""))
+
+
   }
 
   "contextSpec" should "generate context ontology from category" in {
 
     // delete from context http://dbpedia.org/resource/Category:WikiProjects
 
-    val wiki_projects_context = time { factory.constructContext(List("http://dbpedia.org/resource/Category:Technology_WikiProjects")) }
+    val wiki_projects_context = time {
+      factory.constructContext(List("http://dbpedia.org/resource/Category:Technology_WikiProjects"))
+    }
 
-    println( "Nodes count: " ++ wiki_projects_context.nodes.size.toString)
+    println("Nodes count: " ++ wiki_projects_context.nodes.size.toString)
 
-    val programing_language_context = time { factory.constructContext(List("http://dbpedia.org/resource/Category:Programming_languages")) }
+    val programing_language_context = time {
+      factory.constructContext(List("http://dbpedia.org/resource/Category:Programming_languages"))
+    }
 
-    println( "Nodes count: " ++ programing_language_context.nodes.size.toString)
+    println("Nodes count: " ++ programing_language_context.nodes.size.toString)
 
-    val common_context = time { programing_language_context sub wiki_projects_context }
+    val common_context = time {
+      programing_language_context sub wiki_projects_context
+    }
 
     //println(common_context.toDot)
   }
 
   "contextClientSpec" should "Create graph client from previous graph traversal" in {
-    val wiki_projects_context = time { factory.constructContext(List("http://dbpedia.org/resource/Category:Technology_WikiProjects")) }
+    val wiki_projects_context = time {
+      factory.constructContext(List("http://dbpedia.org/resource/Category:Technology_WikiProjects"))
+    }
 
     val contextClient = new ContextGraphClient(wiki_projects_context)
 
@@ -156,6 +200,33 @@ class TraversalSpec extends FlatSpec with Matchers {
 
     assert(commonDiff.isEmpty)
 
+  }
+
+  "constructConcept" should "construct something" in {
+    val threshold = 0.2
+    val init_cats = Concept("http://dbpedia.org/resource/Titanic_(1997_film)").categories
+    val a = factory.constructConcept(init_cats, threshold)
+    a.getTop(threshold).foreach(x => println(x._cat))
+  }
+
+  "constructConcept" should "be quick" in {
+    val threshold = 1.0
+
+    val vars = List(
+      "http://dbpedia.org/resource/Titanic_(1997_film)",
+      "http://dbpedia.org/resource/RMS_Titanic",
+      "http://dbpedia.org/resource/Titanic",
+      "http://dbpedia.org/resource/Iceberg_Theory",
+      "http://dbpedia.org/resource/Iceberg_(fashion_house)",
+      "http://dbpedia.org/resource/Iceberg",
+      "http://dbpedia.org/resource/James_Cameron"
+    )
+
+    vars.map(art => {
+      Tools.time(Concept(art).categories, "SQL " + art)
+    }).map(cats =>{
+      Tools.time(factory.constructConcept(cats, threshold), "gremlin")
+    })
   }
 
 }

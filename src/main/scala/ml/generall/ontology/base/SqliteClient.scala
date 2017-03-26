@@ -15,6 +15,7 @@ object SqliteClient {
 
     val stmt = connection.createStatement()
 
+    // TODO: Retrieve weighting
     val sql = s"""
 SELECT categories.url FROM articles
 JOIN relations ON (articles.id = relations.id_art)

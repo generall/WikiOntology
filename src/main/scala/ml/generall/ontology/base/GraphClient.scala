@@ -33,9 +33,6 @@ object GraphClient extends TitanConnection with GraphClientInterface{
   }
 
 
-  override def getByCategory(cat: String):GremlinVertex = {
-    val vertex = graph.V.has(Category, cat).head
-    new GremlinVertex(vertex)
-  }
+  override def getByCategory(cat: String):Option[GremlinVertex] = graph.V.has(Category, cat).headOption.map(GremlinVertex)
 
 }

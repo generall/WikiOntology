@@ -6,5 +6,5 @@ package ml.generall.ontology.base
 trait GraphClientInterface {
   def getSubNodes(x:VertexAdapter):List[VertexAdapter]
   def getSuperNodes(x:VertexAdapter):List[VertexAdapter]
-  def getByCategory(cat: String):VertexAdapter
+  def getByCategory(cat: String):Option[VertexAdapter]
 }

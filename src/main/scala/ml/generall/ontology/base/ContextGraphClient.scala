@@ -9,7 +9,7 @@ import scala.collection.JavaConverters._
   */
 class ContextGraphClient(traversal: Traversal) extends GraphClientInterface{
 
-  override def getByCategory(cat: String): VertexAdapter = if (traversal.nodes.contains(cat)) new NodeVertex(traversal.nodes(cat)) else null
+  override def getByCategory(cat: String): Option[VertexAdapter] = if (traversal.nodes.contains(cat)) Some(NodeVertex(traversal.nodes(cat))) else None
 
   override def getSubNodes(x: VertexAdapter): List[VertexAdapter] = x match {
     case NodeVertex(node) => traversal.graph.incomingEdgesOf(node).asScala.map(edge => {

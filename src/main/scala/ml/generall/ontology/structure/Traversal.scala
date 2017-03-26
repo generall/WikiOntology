@@ -46,32 +46,30 @@ class Traversal () {
     // Set of keys available in operation result
     val keysSet = keysMergeOp(this.nodes, that.nodes)
 
-    keysSet
-      .map(key => {
-        val thisNode = this.nodes(key)
-        val thatNode = that.nodes(key)
-        val newWeight = operation(thisNode.weight, thatNode.weight)
-        val newId = if (thisNode.id > thatNode.id) thisNode.id else thatNode.id
-        val node = new Node(newId, key)
-        node.weight = newWeight
-        res.graph.addVertex(node)
-        res.nodes(key) = node
-        // get all edges from both graphs outgoing from currect
-        val thisEdges = thisNode match {
-          case EmptyNode => List()
-          case Node(_, _) => this.graph.outgoingEdgesOf(thisNode).asScala.map(edge => {
-            (key, this.graph.getEdgeTarget(edge).category)
-          })
-        }
-        val thatEdges = thatNode match {
-          case EmptyNode => List()
-          case Node(_, _) => that.graph.outgoingEdgesOf(thatNode).asScala.map(edge => {
-            (key, that.graph.getEdgeTarget(edge).category)
-          })
-        }
-        thisEdges ++ thatEdges
-      })
-      .flatMap(x => x)
+    keysSet.flatMap(key => {
+      val thisNode = this.nodes(key)
+      val thatNode = that.nodes(key)
+      val newWeight = operation(thisNode.weight, thatNode.weight)
+      val newId = if (thisNode.id > thatNode.id) thisNode.id else thatNode.id
+      val node = Node(newId, key)
+      node.weight = newWeight
+      res.graph.addVertex(node)
+      res.nodes(key) = node
+      // get all edges from both graphs outgoing from currect
+      val thisEdges = thisNode match {
+        case EmptyNode => List()
+        case Node(_, _) => this.graph.outgoingEdgesOf(thisNode).asScala.map(edge => {
+          (key, this.graph.getEdgeTarget(edge).category)
+        })
+      }
+      val thatEdges = thatNode match {
+        case EmptyNode => List()
+        case Node(_, _) => that.graph.outgoingEdgesOf(thatNode).asScala.map(edge => {
+          (key, that.graph.getEdgeTarget(edge).category)
+        })
+      }
+      thisEdges ++ thatEdges
+    })
       .filter(pair => keysSet.contains(pair._2))
       .foreach(edge => {
         val fromNode = res.nodes(edge._1)
