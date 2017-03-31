@@ -210,7 +210,7 @@ class TraversalSpec extends FlatSpec with Matchers {
   }
 
   "constructConcept" should "be quick" in {
-    val threshold = 1.0
+    val threshold = 0.5
 
     val vars = List(
       "http://dbpedia.org/resource/Titanic_(1997_film)",
@@ -225,8 +225,10 @@ class TraversalSpec extends FlatSpec with Matchers {
     Tools.time({
       vars.map(art => {
         Tools.time(Concept(art).categories, "SQL " + art)
-      }).map(cats => {
-        Tools.time(factory.constructConcept(cats, threshold), "gremlin")
+      }).foreach(cats => {
+        val x = Tools.time(factory.constructConcept(cats, threshold), "gremlin")
+        println(x.nodes.size)
+        x
       })
     }, "Total time")
   }
