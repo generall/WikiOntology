@@ -13,17 +13,19 @@ object SqliteClient {
 
   def getCategoriesPerConcept(concept: String) : List[String] = {
 
-    val stmt = connection.createStatement()
-
     // TODO: Retrieve weighting
     val sql = s"""
 SELECT categories.url FROM articles
 JOIN relations ON (articles.id = relations.id_art)
 JOIN categories ON (relations.id_cat = categories.id)
-WHERE articles.url = "${concept}" LIMIT 30
+WHERE articles.url = ? LIMIT 30
 """
 
-    val queryResult = stmt.executeQuery(sql)
+    val stmt = connection.prepareStatement(sql)
+
+    stmt.setString(1, concept)
+
+    val queryResult = stmt.executeQuery()
 
     readQueryResult(queryResult)
   }
