@@ -15,7 +15,7 @@ object Remapper {
   for (line <- Source.fromFile(filename).getLines) {
     val articles = line.split("\\s")
     if (articles.size == 2) {
-      map(articles(0)) = articles(1)
+      map(articles(0).trim) = articles(1).trim
     } else {
       throw new RuntimeException("malformed input")
     }
