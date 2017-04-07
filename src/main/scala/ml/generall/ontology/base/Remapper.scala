@@ -17,7 +17,7 @@ object Remapper {
     if (articles.size == 2) {
       map(articles(0).trim) = articles(1).trim
     } else {
-      throw new RuntimeException("malformed input")
+      //throw new RuntimeException("malformed input")
     }
   }
 
