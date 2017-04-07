@@ -23,7 +23,7 @@ WHERE articles.url = ? LIMIT 30
 
     val stmt = connection.prepareStatement(sql)
 
-    stmt.setString(1, concept)
+    stmt.setString(1, Remapper.remap(concept))
 
     val queryResult = stmt.executeQuery()
 
