@@ -85,7 +85,7 @@ class TraversalFactory(graphClient: GraphClientInterface) {
                        initWeight: Double = 1.0
                      ): Traversal = {
     val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
-    val initialWeight = initWeight
+    val initialWeight = Math.max(initWeight, threshold)
     graphClient.getByCategory(cat) match {
       case Some(vertex) => growUp(traversal, vertex, initialWeight, thisDelayedMap, threshold)
       case None =>
