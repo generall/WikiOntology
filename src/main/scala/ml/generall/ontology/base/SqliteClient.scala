@@ -11,11 +11,12 @@ object SqliteClient {
 
   val connection = DriverManager.getConnection(Config.CONCEPT_MAPPING_BASE)
 
-  def getCategoriesPerConcept(concept: String) : List[String] = {
+  def getCategoriesPerConcept(concept: String): List[(String, Double)] = {
 
     // TODO: Retrieve weighting
-    val sql = s"""
-SELECT categories.url FROM articles
+    val sql =
+      s"""
+SELECT categories.url, categories.freq FROM articles
 JOIN relations ON (articles.id = relations.id_art)
 JOIN categories ON (relations.id_cat = categories.id)
 WHERE articles.url = ? LIMIT 30
@@ -30,8 +31,8 @@ WHERE articles.url = ? LIMIT 30
     readQueryResult(queryResult)
   }
 
-  def readQueryResult(queryResult: ResultSet ): List[String] = {
-    if(queryResult.next()) queryResult.getString("url") :: readQueryResult(queryResult) else Nil
-  }
+  def readQueryResult(queryResult: ResultSet): List[(String, Double)] = if (queryResult.next())
+    (queryResult.getString("url"), queryResult.getDouble("freq")) :: readQueryResult(queryResult) else Nil
+
 
 }

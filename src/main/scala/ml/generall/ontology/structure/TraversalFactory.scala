@@ -11,6 +11,7 @@ import scala.collection.mutable
 class TraversalFactory(graphClient: GraphClientInterface) {
   val threshold = 0.1 // Minimum delta weight per traversal
 
+
   /**
     * Constructs ontology graph for list of categories.
     *
@@ -18,11 +19,20 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     * @param threshold   minimum weight barrier
     * @return category graph
     */
-  def constructConcept(initialCats: List[String], threshold: Double = threshold): Traversal = {
+  def constructConcept(initialCats: List[String], threshold: Double = threshold): Traversal = constructConceptWeighted(initialCats.map((_, 1.0)), threshold)
+
+  /**
+    * Constructs ontology graph for list of categories.
+    *
+    * @param initialCats list of initial categories, typically taken from concept
+    * @param threshold   minimum weight barrier
+    * @return category graph
+    */
+  def constructConceptWeighted(initialCats: List[(String, Double)], threshold: Double = threshold): Traversal = {
     val traversal = new Traversal
     val delayedMap = new mutable.HashMap[VertexAdapter, (Node, Double)]
     //initialCats.foreach(category => fastExtendTraversal(traversal, category))
-    initialCats.foreach(x => extendTraversal(traversal, x, delayedMap, threshold))
+    initialCats.foreach { case (cat, weight) => extendTraversal(traversal, cat, delayedMap, threshold, initWeight = weight) }
 
     traversal
   }
@@ -71,10 +81,11 @@ class TraversalFactory(graphClient: GraphClientInterface) {
                        traversal: Traversal,
                        cat: String,
                        delayedMap: mutable.HashMap[VertexAdapter, (Node, Double)] = null,
-                       threshold: Double = threshold
+                       threshold: Double = threshold,
+                       initWeight: Double = 1.0
                      ): Traversal = {
     val thisDelayedMap = if (delayedMap == null) new mutable.HashMap[VertexAdapter, (Node, Double)] else delayedMap
-    val initialWeight = 1.0
+    val initialWeight = initWeight
     graphClient.getByCategory(cat) match {
       case Some(vertex) => growUp(traversal, vertex, initialWeight, thisDelayedMap, threshold)
       case None =>
@@ -82,6 +93,15 @@ class TraversalFactory(graphClient: GraphClientInterface) {
     traversal
   }
 
+  /**
+    * Construct context traversal from top-level node.
+    *
+    * @param traversal
+    * @param cat        initial top-level category
+    * @param delayedMap Map of seen categories not yet included in traversal
+    * @param threshold  not used here
+    * @return Extended traversal
+    */
   def extendContext(
                      traversal: Traversal,
                      cat: String,

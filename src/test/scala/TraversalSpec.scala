@@ -53,9 +53,9 @@ class TraversalSpec extends FlatSpec with Matchers {
 
     val groovy = new Concept("http://dbpedia.org/resource/Groovy_(programming_language)")
 
-    val traversalScala = factory.constructConcept(scala.categories, 0.4)
-    val traversalKotlin = factory.constructConcept(kotlin.categories, 0.4)
-    val traversalGroovy = factory.constructConcept(groovy.categories, 0.4)
+    val traversalScala = factory.constructConceptWeighted(scala.categories, 0.4)
+    val traversalKotlin = factory.constructConceptWeighted(kotlin.categories, 0.4)
+    val traversalGroovy = factory.constructConceptWeighted(groovy.categories, 0.4)
 
     val diff = traversalScala sub traversalKotlin
 
@@ -133,7 +133,7 @@ class TraversalSpec extends FlatSpec with Matchers {
 
     val scala = new Concept("http://dbpedia.org/resource/Scala_(programming_language)")
 
-    val traversalScala = contextFactory.constructConcept(scala.categories)
+    val traversalScala = contextFactory.constructConceptWeighted(scala.categories)
 
     contextFactory.removeUnderweightNodes(traversalScala)
 
@@ -205,7 +205,7 @@ class TraversalSpec extends FlatSpec with Matchers {
   "constructConcept" should "construct something" in {
     val threshold = 0.2
     val init_cats = Concept("http://dbpedia.org/resource/Titanic_(1997_film)").categories
-    val a = factory.constructConcept(init_cats, threshold)
+    val a = factory.constructConceptWeighted(init_cats, threshold)
     a.getTop(threshold).foreach(x => println(x._cat))
   }
 
@@ -226,7 +226,7 @@ class TraversalSpec extends FlatSpec with Matchers {
       vars.map(art => {
         Tools.time(Concept(art).categories, "SQL " + art)
       }).foreach(cats => {
-        val x = Tools.time(factory.constructConcept(cats, threshold), "gremlin")
+        val x = Tools.time(factory.constructConceptWeighted(cats, threshold), "gremlin")
         println(x.nodes.size)
         x
       })
