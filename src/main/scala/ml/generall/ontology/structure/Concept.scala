@@ -15,6 +15,10 @@ case class Concept(_url: String) {
 
   def loadRootCategories(url: String): List[(String, Double)] = {
     val (cats, weights) = SqliteClient.getCategoriesPerConcept(url).unzip
+    if(weights.isEmpty) {
+      println(s"WARN: no categories for $url")
+      return Nil
+    }
     cats.zip(ProbTools.scaleArray(weights.map(w => 1.0 / Math.log(1.0 / w))))
   }
 }
